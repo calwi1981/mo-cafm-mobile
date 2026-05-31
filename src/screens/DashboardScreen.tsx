@@ -8,13 +8,14 @@ import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
 
 type Props = {
+  onOpenTickets: () => void;
   user: User;
   site: Site;
   onLogout: () => void;
   onSwitchSite: () => void;
 };
 
-export function DashboardScreen({ user, site, onLogout, onSwitchSite }: Props) {
+export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTickets }: Props) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [runs, setRuns] = useState<ChecklistRun[]>([]);
   const [syncRed, setSyncRed] = useState(false);
@@ -51,7 +52,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite }: Props) {
       <TopBar title={site.hotel_name} syncRed={syncRed} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={syncNow} language={user.language} />
 
       <View style={styles.content}>
-        <TouchableOpacity style={styles.bigCard}>
+        <TouchableOpacity style={styles.bigCard} onPress={onOpenTickets}>
           <Text style={styles.bigNumber}>{tickets.length}</Text>
           <Text style={styles.bigTitle}>{t(user.language, "tickets")}</Text>
           <Text style={styles.hint}>OPEN · IN_PROGRESS · WAITING</Text>

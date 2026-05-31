@@ -27,3 +27,8 @@ export async function getTickets(userId: number, status: string) {
 export async function getChecklistRuns(userId: number, state: "OPEN_ACTIVE" | "IN_PROGRESS") {
   return apiGet(`/api/checklists/runs?user_id=${encodeURIComponent(String(userId))}&state=${state}&limit=50&offset=0`);
 }
+
+
+export async function getTicketDetail(userId: number, ticketId: number) {
+  return apiGet(`/api/tickets/${ticketId}?user_id=${encodeURIComponent(String(userId))}`);
+}
