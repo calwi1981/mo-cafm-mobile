@@ -9,10 +9,12 @@ import { TicketsScreen } from "./src/screens/TicketsScreen";
 import { ChecklistsScreen } from "./src/screens/ChecklistsScreen";
 import { Site, User } from "./src/types/models";
 import { t } from "./src/i18n";
+import { initDb } from "./src/db/database";
 
 type AppScreen = "dashboard" | "tickets" | "checklists";
 
 export default function App() {
+  initDb();
   const [user, setUser] = useState<User | null>(null);
   const [site, setSite] = useState<Site | null>(null);
   const [screen, setScreen] = useState<AppScreen>("dashboard");
