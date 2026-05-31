@@ -63,6 +63,8 @@ export type ChecklistRun = {
   status: "OPEN" | "IN_PROGRESS" | "DONE" | "MISSED";
   due_date?: string;
   assigned_group?: string;
+  plan_frequency?: string;
+  plan_interval_value?: number;
   template_title?: string;
   template_title_de?: string;
   template_title_en?: string;

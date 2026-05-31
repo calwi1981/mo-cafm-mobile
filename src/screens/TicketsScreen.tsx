@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { addTicketComment, createTicket, getTicketDetail, getTickets, updateTicket } from "../api/moCafm";
+import { addTicketComment, createTicket, getAssets, getBuildings, getRooms, getTicketDetail, updateTicket } from "../api/moCafm";
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { notify } from "../notify";
+import { syncTickets } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
-import { Site, Ticket, User } from "../types/models";
+import { Asset, Building, Room, Site, Ticket, User } from "../types/models";
 
 type TicketFilter = "ALL" | "OPEN" | "IN_PROGRESS" | "WAITING";
 
@@ -68,6 +70,13 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   const [newDescription, setNewDescription] = useState("");
   const [newPriority, setNewPriority] = useState("MEDIUM");
   const [newGroup, setNewGroup] = useState("MAINTENANCE");
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [newBuildingId, setNewBuildingId] = useState<number | null>(null);
+  const [newRoomId, setNewRoomId] = useState<number | null>(null);
+  const [newAssetId, setNewAssetId] = useState<number | null>(null);
+  const [objectSearch, setObjectSearch] = useState("");
 
   const [editStatus, setEditStatus] = useState("OPEN");
   const [editPriority, setEditPriority] = useState("MEDIUM");
@@ -78,12 +87,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   async function loadTickets() {
     try {
       setBusy(true);
-      const open = await getTickets(user.id, "OPEN");
-      const progress = await getTickets(user.id, "IN_PROGRESS");
-      const waiting = await getTickets(user.id, "WAITING");
-
-      const rows = [...open.items, ...progress.items, ...waiting.items]
-        .filter((x: Ticket) => x.site_id === site.site_id)
+      const rows = (await syncTickets(user.id, site.site_id))
         .sort((a: Ticket, b: Ticket) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
@@ -92,7 +96,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
       setTickets(rows);
     } catch (e: any) {
-      Alert.alert(t(user.language, "tickets"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "tickets"), e?.message || t(user.language, "unknownError"));
     } finally {
       setSyncRed(getSyncRed());
       setBusy(false);
@@ -105,14 +109,50 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setSelectedTicket(detail);
       setDetailVisible(true);
     } catch (e: any) {
-      Alert.alert(t(user.language, "ticketDetail"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "ticketDetail"), e?.message || t(user.language, "unknownError"));
     }
   }
 
 
+
+  async function loadTicketReferenceData() {
+    try {
+      const allBuildings = await getBuildings(user.id);
+      const siteBuildings = allBuildings.filter((b: Building) => b.site_id === site.site_id);
+      setBuildings(siteBuildings);
+
+      if (siteBuildings.length === 1) {
+        await selectBuilding(siteBuildings[0].id);
+      }
+    } catch (e: any) {
+      notify(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
+    }
+  }
+
+  async function selectBuilding(buildingId: number) {
+    setNewBuildingId(buildingId);
+    setNewRoomId(null);
+    setNewAssetId(null);
+    setObjectSearch("");
+
+    try {
+      const nextRooms = await getRooms(user.id, buildingId);
+      const nextAssets = await getAssets(user.id, buildingId);
+      setRooms(nextRooms);
+      setAssets(nextAssets);
+    } catch (e: any) {
+      notify(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
+    }
+  }
+
+  function openCreateTicket() {
+    setCreateVisible(true);
+    loadTicketReferenceData();
+  }
+
   async function submitCreateTicket() {
     if (!newTitle.trim()) {
-      Alert.alert(t(user.language, "newTicket"), t(user.language, "titleField"));
+      notify(t(user.language, "newTicket"), t(user.language, "titleField"));
       return;
     }
 
@@ -124,6 +164,9 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
         description: newDescription.trim(),
         priority: newPriority,
         assigned_group: newGroup,
+        building_id: newBuildingId,
+        room_id: newRoomId,
+        asset_id: newAssetId,
       });
 
       markDirty();
@@ -133,11 +176,19 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setNewDescription("");
       setNewPriority("MEDIUM");
       setNewGroup("MAINTENANCE");
+      setNewBuildingId(null);
+      setNewRoomId(null);
+      setNewAssetId(null);
+      setObjectSearch("");
+      setRooms([]);
+      setAssets([]);
       markSynced();
       await loadTickets();
-      Alert.alert(t(user.language, "newTicket"), t(user.language, "ticketCreated"));
+      markDirty();
+      setSyncRed(getSyncRed());
+      notify(t(user.language, "newTicket"), t(user.language, "ticketCreated"));
     } catch (e: any) {
-      Alert.alert(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
     }
   }
 
@@ -154,7 +205,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   async function submitTicketUpdate() {
     if (!editComment.trim()) {
-      Alert.alert(t(user.language, "updateTicket"), t(user.language, "commentRequired"));
+      notify(t(user.language, "updateTicket"), t(user.language, "commentRequired"));
       return;
     }
 
@@ -177,15 +228,17 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setDetailVisible(false);
       markSynced();
       await loadTickets();
-      Alert.alert(t(user.language, "updateTicket"), t(user.language, "ticketUpdated"));
+      markDirty();
+      setSyncRed(getSyncRed());
+      notify(t(user.language, "updateTicket"), t(user.language, "ticketUpdated"));
     } catch (e: any) {
-      Alert.alert(t(user.language, "updateTicket"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "updateTicket"), e?.message || t(user.language, "unknownError"));
     }
   }
 
   async function submitComment() {
     if (!newComment.trim()) {
-      Alert.alert(t(user.language, "addComment"), t(user.language, "commentRequired"));
+      notify(t(user.language, "addComment"), t(user.language, "commentRequired"));
       return;
     }
 
@@ -201,8 +254,10 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       const detail = await getTicketDetail(user.id, ticket.id);
       setSelectedTicket(detail);
       await loadTickets();
+      markDirty();
+      setSyncRed(getSyncRed());
     } catch (e: any) {
-      Alert.alert(t(user.language, "addComment"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "addComment"), e?.message || t(user.language, "unknownError"));
     }
   }
 
@@ -261,7 +316,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
         <View style={styles.titleRow}>
           <Text style={styles.title}>{t(user.language, "tickets")}</Text>
-          <TouchableOpacity style={styles.newButton} onPress={() => setCreateVisible(true)}>
+          <TouchableOpacity style={styles.newButton} onPress={openCreateTicket}>
             <Text style={styles.newButtonText}>+ {t(user.language, "newTicket")}</Text>
           </TouchableOpacity>
         </View>
@@ -374,6 +429,46 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
             <Text style={styles.label}>{t(user.language, "descriptionField")}</Text>
             <TextInput style={[styles.input, styles.textArea]} value={newDescription} onChangeText={setNewDescription} multiline />
+
+            <Text style={styles.label}>Raum oder Anlage suchen</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="z.B. 279"
+              value={objectSearch}
+              onChangeText={setObjectSearch}
+            />
+
+            <Text style={styles.subLabel}>{t(user.language, "room")}</Text>
+            <ScrollView style={styles.pickList} nestedScrollEnabled>
+              {rooms
+                .filter((r) => {
+                  const q = objectSearch.trim().toLowerCase();
+                  if (!q && newRoomId !== r.id) return false;
+                  return [r.room_code, r.name].filter(Boolean).join(" ").toLowerCase().includes(q) || newRoomId === r.id;
+                })
+                .slice(0, 80)
+                .map((r) => (
+                  <TouchableOpacity key={r.id} style={[styles.pickItem, newRoomId === r.id && styles.optionActive]} onPress={() => setNewRoomId(r.id)}>
+                    <Text style={[styles.optionText, newRoomId === r.id && styles.optionTextActive]}>{[r.room_code, r.name].filter(Boolean).join(" - ")}</Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
+
+            <Text style={styles.subLabel}>{t(user.language, "asset")}</Text>
+            <ScrollView style={styles.pickList} nestedScrollEnabled>
+              {assets
+                .filter((a) => {
+                  const q = objectSearch.trim().toLowerCase();
+                  if (!q && newAssetId !== a.id) return false;
+                  return [a.asset_code, a.description, a.standard_asset_name].filter(Boolean).join(" ").toLowerCase().includes(q) || newAssetId === a.id;
+                })
+                .slice(0, 80)
+                .map((a) => (
+                  <TouchableOpacity key={a.id} style={[styles.pickItem, newAssetId === a.id && styles.optionActive]} onPress={() => setNewAssetId(a.id)}>
+                    <Text style={[styles.optionText, newAssetId === a.id && styles.optionTextActive]}>{[a.asset_code, a.description].filter(Boolean).join(" - ")}</Text>
+                  </TouchableOpacity>
+                ))}
+            </ScrollView>
 
             <Text style={styles.label}>{t(user.language, "priority")}</Text>
             <View style={styles.optionRow}>
@@ -513,6 +608,9 @@ const styles = StyleSheet.create({
   actionButton: { flex: 1, backgroundColor: "#334155", padding: 12, borderRadius: 10, alignItems: "center" },
   actionButtonText: { color: "#fff", fontWeight: "900", fontSize: 12 },
   label: { fontWeight: "900", color: "#0f172a", marginTop: 12, marginBottom: 6 },
+  subLabel: { fontWeight: "900", color: "#475569", marginTop: 10, marginBottom: 6 },
+  pickList: { maxHeight: 170, backgroundColor: "#f1f5f9", borderRadius: 12, marginBottom: 8 },
+  pickItem: { paddingVertical: 10, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: "#e2e8f0" },
   input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, padding: 12, fontSize: 16 },
   textArea: { minHeight: 120, textAlignVertical: "top" },
   optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },

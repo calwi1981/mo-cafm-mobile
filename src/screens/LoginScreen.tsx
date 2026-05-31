@@ -4,6 +4,7 @@ import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "reac
 import { login } from "../api/moCafm";
 import { User } from "../types/models";
 import { t } from "../i18n";
+import { notify } from "../notify";
 
 type Props = {
   onLogin: (user: User) => void;
@@ -17,7 +18,7 @@ export function LoginScreen({ onLogin, language }: Props) {
 
   async function submit() {
     if (!personnelNumber.trim() || !password.trim()) {
-      Alert.alert("Login", t(language, "loginMissing"));
+      notify("Login", t(language, "loginMissing"));
       return;
     }
 
@@ -26,7 +27,7 @@ export function LoginScreen({ onLogin, language }: Props) {
       const res = await login(personnelNumber.trim(), password.trim());
       onLogin(res.user);
     } catch (e: any) {
-      Alert.alert(t(language, "loginFailed"), e?.message || t(language, "unknownError"));
+      notify(t(language, "loginFailed"), e?.message || t(language, "unknownError"));
     } finally {
       setBusy(false);
     }

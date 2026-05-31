@@ -6,6 +6,7 @@ import { getChecklistRuns, getTickets } from "../api/moCafm";
 import { TopBar } from "../components/TopBar";
 import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
+import { notify } from "../notify";
 
 type Props = {
   onOpenTickets: () => void;
@@ -24,7 +25,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
   async function syncNow() {
     const state = await NetInfo.fetch();
     if (!state.isConnected || state.isInternetReachable === false) {
-      Alert.alert(t(user.language, "sync"), t(user.language, "syncOffline"));
+      notify(t(user.language, "sync"), t(user.language, "syncOffline"));
       return;
     }
 
@@ -38,9 +39,8 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
       setTickets([...openTickets.items, ...progressTickets.items, ...waitingTickets.items].filter((t) => t.site_id === site.site_id));
       setRuns([...openRuns.items, ...progressRuns.items].filter((r) => r.site_id === site.site_id));
       setSyncRed(false);
-      Alert.alert(t(user.language, "sync"), t(user.language, "syncOk"));
     } catch (e: any) {
-      Alert.alert(t(user.language, "sync"), e?.message || t(user.language, "syncError"));
+      notify(t(user.language, "sync"), e?.message || t(user.language, "syncError"));
     }
   }
 

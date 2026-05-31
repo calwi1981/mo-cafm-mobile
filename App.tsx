@@ -9,6 +9,7 @@ import { TicketsScreen } from "./src/screens/TicketsScreen";
 import { ChecklistsScreen } from "./src/screens/ChecklistsScreen";
 import { Site, User } from "./src/types/models";
 import { t } from "./src/i18n";
+import { notify } from "./src/notify";
 import { initDb } from "./src/db/database";
 
 type AppScreen = "dashboard" | "tickets" | "checklists";
@@ -44,7 +45,7 @@ export default function App() {
       if (!loginAtRef.current) return;
       const diffHours = (Date.now() - loginAtRef.current) / 1000 / 60 / 60;
       if (diffHours >= AUTO_LOGOUT_HOURS) {
-        Alert.alert(t(user?.language, "autoLogoutTitle"), t(user?.language, "autoLogoutText"));
+        notify(t(user?.language, "autoLogoutTitle"), t(user?.language, "autoLogoutText"));
         logout();
       }
     }, 60000);

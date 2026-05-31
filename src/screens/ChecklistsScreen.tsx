@@ -1,9 +1,11 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { createNokTicketsFromChecklist, getChecklistRunDetail, getChecklistRuns, saveChecklistRun } from "../api/moCafm";
+import { createNokTicketsFromChecklist, getChecklistRunDetail, saveChecklistRun } from "../api/moCafm";
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { syncChecklists } from "../cacheService";
+import { notify } from "../notify";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
 import { ChecklistRun, Site, User } from "../types/models";
 
@@ -16,6 +18,7 @@ type Props = {
 };
 
 type RunFilter = "ALL" | "OPEN" | "IN_PROGRESS";
+type CycleFilter = "ALL" | "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 function fmtDate(value?: string) {
   if (!value) return "-";
@@ -61,6 +64,7 @@ function questionText(item: any, language?: string) {
 export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }: Props) {
   const [runs, setRuns] = useState<ChecklistRun[]>([]);
   const [filter, setFilter] = useState<RunFilter>("ALL");
+  const [cycleFilter, setCycleFilter] = useState<CycleFilter>("ALL");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [syncRed, setSyncRed] = useState(getSyncRed());
@@ -71,11 +75,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
   async function loadRuns() {
     try {
       setBusy(true);
-      const open = await getChecklistRuns(user.id, "OPEN_ACTIVE");
-      const progress = await getChecklistRuns(user.id, "IN_PROGRESS");
-
-      const rows = [...open.items, ...progress.items]
-        .filter((x: ChecklistRun) => x.site_id === site.site_id)
+      const rows = (await syncChecklists(user.id, site.site_id))
         .sort((a: ChecklistRun, b: ChecklistRun) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
@@ -84,7 +84,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
       setRuns(rows);
     } catch (e: any) {
-      Alert.alert(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
     } finally {
       setSyncRed(getSyncRed());
       setBusy(false);
@@ -109,7 +109,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
       setSelectedRun(detail);
       setDetailVisible(true);
     } catch (e: any) {
-      Alert.alert(t(user.language, "checklistDetail"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "checklistDetail"), e?.message || t(user.language, "unknownError"));
     }
   }
 
@@ -139,9 +139,11 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
       setDetailVisible(false);
       markSynced();
       await loadRuns();
-      Alert.alert(t(user.language, "checklists"), t(user.language, "checklistSaved"));
+      markDirty();
+      setSyncRed(getSyncRed());
+      notify(t(user.language, "checklists"), t(user.language, "checklistSaved"));
     } catch (e: any) {
-      Alert.alert(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
     }
   }
 
@@ -157,12 +159,12 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
     try {
       const res = await createNokTicketsFromChecklist(user.id, selectedRun.run.id);
-      Alert.alert(
+      notify(
         t(user.language, "saveAndCreateNokTickets"),
         `${t(user.language, "nokTicketsCreated")} (${res.created || 0} / ${res.skipped || 0})`
       );
     } catch (e: any) {
-      Alert.alert(t(user.language, "saveAndCreateNokTickets"), e?.message || t(user.language, "unknownError"));
+      notify(t(user.language, "saveAndCreateNokTickets"), e?.message || t(user.language, "unknownError"));
     }
   }
 
@@ -175,6 +177,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
     return runs.filter((run) => {
       if (filter !== "ALL" && run.status !== filter) return false;
+      if (cycleFilter !== "ALL" && run.plan_frequency !== cycleFilter) return false;
       if (!q) return true;
 
       const text = [
@@ -192,7 +195,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
       return text.includes(q);
     });
-  }, [runs, filter, search]);
+  }, [runs, filter, cycleFilter, search]);
 
   const grouped = useMemo(() => {
     const result: Array<{ type: "header"; title: string } | { type: "run"; run: ChecklistRun }> = [];
@@ -236,6 +239,14 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
           ))}
         </View>
 
+        <View style={styles.filters}>
+          {(["ALL", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"] as CycleFilter[]).map((x) => (
+            <TouchableOpacity key={x} style={[styles.filterButton, cycleFilter === x && styles.filterActive]} onPress={() => setCycleFilter(x)}>
+              <Text style={[styles.filterText, cycleFilter === x && styles.filterTextActive]}>{x === "ALL" ? t(user.language, "all") : x}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         {busy ? <Text style={styles.loading}>{t(user.language, "loadingChecklists")}</Text> : null}
 
         <FlatList
@@ -253,6 +264,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
                 </View>
                 <Text style={styles.meta}>{[run.building_name, run.room_code, run.asset_code].filter(Boolean).join(" · ")}</Text>
                 <Text style={styles.meta}>{run.asset_description || run.room_description || ""}</Text>
+                <Text style={styles.meta}>{run.plan_frequency || ""}{run.plan_interval_value && run.plan_interval_value !== 1 ? ` / ${run.plan_interval_value}` : ""}</Text>
                 <Text style={styles.due}>{t(user.language, "dueDate")}: {fmtDate(run.due_date)}</Text>
               </TouchableOpacity>
             );

@@ -1,9 +1,10 @@
 import { Footer } from "../components/Footer";
 import React, { useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { getSites } from "../api/moCafm";
+import { syncSites } from "../cacheService";
 import { Site, User } from "../types/models";
 import { t } from "../i18n";
+import { notify } from "../notify";
 
 type Props = {
   user: User;
@@ -18,10 +19,10 @@ export function SiteSelectScreen({ user, onSelect, onLogout }: Props) {
   useEffect(() => {
     async function load() {
       try {
-        const rows = await getSites(user.id);
+        const rows = await syncSites(user.id);
         setSites(rows);
       } catch (e: any) {
-        Alert.alert("Objekte", e?.message || "Objekte konnten nicht geladen werden.");
+        notify("Objekte", e?.message || "Objekte konnten nicht geladen werden.");
       } finally {
         setBusy(false);
       }
