@@ -2,7 +2,7 @@ import { Footer } from "../components/Footer";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
-import { getChecklistRuns, getTickets } from "../api/moCafm";
+import { syncChecklists, syncTickets } from "../cacheService";
 import { TopBar } from "../components/TopBar";
 import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
@@ -30,14 +30,11 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
     }
 
     try {
-      const openTickets = await getTickets(user.id, "OPEN");
-      const progressTickets = await getTickets(user.id, "IN_PROGRESS");
-      const waitingTickets = await getTickets(user.id, "WAITING");
-      const openRuns = await getChecklistRuns(user.id, "OPEN_ACTIVE");
-      const progressRuns = await getChecklistRuns(user.id, "IN_PROGRESS");
+      const nextTickets = await syncTickets(user.id, site.site_id);
+      const nextRuns = await syncChecklists(user.id, site.site_id);
 
-      setTickets([...openTickets.items, ...progressTickets.items, ...waitingTickets.items].filter((t) => t.site_id === site.site_id));
-      setRuns([...openRuns.items, ...progressRuns.items].filter((r) => r.site_id === site.site_id));
+      setTickets(nextTickets);
+      setRuns(nextRuns);
       setSyncRed(false);
     } catch (e: any) {
       notify(t(user.language, "sync"), e?.message || t(user.language, "syncError"));
