@@ -66,3 +66,22 @@ export async function updateTicket(userId: number, ticketId: number, payload: {
     ...payload,
   });
 }
+
+
+export async function getChecklistRunDetail(userId: number, runId: number) {
+  return apiGet(`/api/checklists/runs/${runId}?user_id=${encodeURIComponent(String(userId))}`);
+}
+
+export async function saveChecklistRun(userId: number, runId: number, answers: any[]) {
+  return apiPost(`/api/checklists/runs/${runId}/save`, {
+    requester_user_id: userId,
+    answers,
+  });
+}
+
+
+export async function createNokTicketsFromChecklist(userId: number, runId: number) {
+  return apiPost(`/api/checklists/runs/${runId}/create-nok-tickets`, {
+    requester_user_id: userId,
+  });
+}

@@ -56,6 +56,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     updateTicket: "Ticket bearbeiten",
     selectPriority: "Priorität wählen",
     selectGroup: "Gruppe wählen",
+
+    saveAndCreateNokTickets: "Speichern und NOK-Tickets generieren",
+    nokTicketsCreated: "NOK-Tickets wurden erzeugt.",
   },
   en: {
     appTitle: "MO-CAFM",
@@ -112,6 +115,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     updateTicket: "Edit ticket",
     selectPriority: "Select priority",
     selectGroup: "Select group",
+
+    saveAndCreateNokTickets: "Save and create NOK tickets",
+    nokTicketsCreated: "NOK tickets have been created.",
   },
   nl: {
     appTitle: "MO-CAFM",
@@ -168,6 +174,9 @@ export const translations: Record<Lang, Record<string, string>> = {
     updateTicket: "Ticket bewerken",
     selectPriority: "Prioriteit kiezen",
     selectGroup: "Groep kiezen",
+
+    saveAndCreateNokTickets: "Opslaan en NOK-tickets maken",
+    nokTicketsCreated: "NOK-tickets zijn aangemaakt.",
   },
 };
 

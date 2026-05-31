@@ -6,10 +6,11 @@ import { LoginScreen } from "./src/screens/LoginScreen";
 import { SiteSelectScreen } from "./src/screens/SiteSelectScreen";
 import { DashboardScreen } from "./src/screens/DashboardScreen";
 import { TicketsScreen } from "./src/screens/TicketsScreen";
+import { ChecklistsScreen } from "./src/screens/ChecklistsScreen";
 import { Site, User } from "./src/types/models";
 import { t } from "./src/i18n";
 
-type AppScreen = "dashboard" | "tickets";
+type AppScreen = "dashboard" | "tickets" | "checklists";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -70,6 +71,14 @@ export default function App() {
           onLogout={logout}
           onSwitchSite={switchSite}
         />
+      ) : screen === "checklists" ? (
+        <ChecklistsScreen
+          user={user}
+          site={site}
+          onBack={() => setScreen("dashboard")}
+          onLogout={logout}
+          onSwitchSite={switchSite}
+        />
       ) : (
         <DashboardScreen
           user={user}
@@ -77,6 +86,7 @@ export default function App() {
           onLogout={logout}
           onSwitchSite={switchSite}
           onOpenTickets={() => setScreen("tickets")}
+          onOpenChecklists={() => setScreen("checklists")}
         />
       )}
     </>

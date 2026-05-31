@@ -9,13 +9,14 @@ import { t } from "../i18n";
 
 type Props = {
   onOpenTickets: () => void;
+  onOpenChecklists: () => void;
   user: User;
   site: Site;
   onLogout: () => void;
   onSwitchSite: () => void;
 };
 
-export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTickets }: Props) {
+export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTickets, onOpenChecklists }: Props) {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [runs, setRuns] = useState<ChecklistRun[]>([]);
   const [syncRed, setSyncRed] = useState(false);
@@ -58,7 +59,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
           <Text style={styles.hint}>OPEN · IN_PROGRESS · WAITING</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.bigCard}>
+        <TouchableOpacity style={styles.bigCard} onPress={onOpenChecklists}>
           <Text style={styles.bigNumber}>{runs.length}</Text>
           <Text style={styles.bigTitle}>{t(user.language, "checklists")}</Text>
           <Text style={styles.hint}>OPEN · IN_PROGRESS</Text>
