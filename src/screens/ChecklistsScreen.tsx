@@ -4,9 +4,10 @@ import { createNokTicketsFromChecklist, getChecklistRunDetail, saveChecklistRun 
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
-import { syncChecklistDetail, syncChecklists } from "../cacheService";
+import { readChecklistDetailFromCache, readChecklistsFromCache, syncCurrentSite } from "../cacheService";
 import { notify } from "../notify";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
+import { queueAction } from "../syncQueue";
 import { ChecklistRun, Site, User } from "../types/models";
 
 type Props = {
@@ -75,7 +76,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
   async function loadRuns() {
     try {
       setBusy(true);
-      const rows = (await syncChecklists(user.id, site.site_id))
+      const rows = readChecklistsFromCache(site.site_id)
         .sort((a: ChecklistRun, b: ChecklistRun) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
@@ -93,7 +94,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
   async function openRun(run: ChecklistRun) {
     try {
-      const detail = await syncChecklistDetail(user.id, run.id);
+      const detail = readChecklistDetailFromCache(run.id);
       const initial: Record<number, any> = {};
       for (const item of detail.items || []) {
         initial[item.id] = {
@@ -133,7 +134,11 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
     }));
 
     try {
-      await saveChecklistRun(user.id, selectedRun.run.id, payload);
+      queueAction("checklist_save", {
+        user_id: user.id,
+        run_id: selectedRun.run.id,
+        answers: payload,
+      });
       markDirty();
       setSyncRed(getSyncRed());
       setDetailVisible(false);
@@ -158,7 +163,11 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
     await submitChecklist();
 
     try {
-      const res = await createNokTicketsFromChecklist(user.id, selectedRun.run.id);
+      const res = { created: 0, skipped: 0 };
+      queueAction("checklist_create_nok_tickets", {
+        user_id: user.id,
+        run_id: selectedRun.run.id,
+      });
       notify(
         t(user.language, "saveAndCreateNokTickets"),
         `${t(user.language, "nokTicketsCreated")} (${res.created || 0} / ${res.skipped || 0})`
@@ -215,7 +224,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadRuns} language={user.language} syncRed={syncRed} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadRuns(); }} language={user.language} syncRed={syncRed} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>

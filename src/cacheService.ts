@@ -13,87 +13,106 @@ import {
   setLastSyncNow,
 } from "./db/database";
 import { getChecklistRunDetail, getChecklistRuns, getSites, getTicketDetail, getTickets } from "./api/moCafm";
-import { markSynced, markDirty } from "./syncState";
+import { flushQueue } from "./syncQueue";
+import { markDirty, markSynced } from "./syncState";
 
 export async function isOnline() {
   const state = await NetInfo.fetch();
   return !!state.isConnected && state.isInternetReachable !== false;
 }
 
-function useFallback<T>(fallback: T): T {
-  markDirty();
-  return fallback;
+export function readSitesFromCache() {
+  return getCachedSites();
+}
+
+export function readTicketsFromCache(siteId: string) {
+  return getCachedTickets(siteId);
+}
+
+export function readChecklistsFromCache(siteId: string) {
+  return getCachedChecklists(siteId);
+}
+
+export function readTicketDetailFromCache(ticketId: number) {
+  return getCachedTicketDetail(ticketId);
+}
+
+export function readChecklistDetailFromCache(runId: number) {
+  return getCachedChecklistDetail(runId);
 }
 
 export async function syncSites(userId: number) {
-  try {
-    if (!(await isOnline())) return useFallback(getCachedSites());
-
-    const sites = await getSites(userId);
-    cacheSites(sites);
-    setLastSyncNow();
-    markSynced();
-    return sites;
-  } catch {
-    return useFallback(getCachedSites());
+  if (!(await isOnline())) {
+    markDirty();
+    return getCachedSites();
   }
+
+  const sites = await getSites(userId);
+  cacheSites(sites);
+  setLastSyncNow();
+  markSynced();
+  return sites;
 }
 
-export async function syncTickets(userId: number, siteId: string) {
-  try {
-    if (!(await isOnline())) return useFallback(getCachedTickets(siteId));
-
-    const open = await getTickets(userId, "OPEN");
-    const progress = await getTickets(userId, "IN_PROGRESS");
-    const waiting = await getTickets(userId, "WAITING");
-
-    const rows = [...open.items, ...progress.items, ...waiting.items].filter((x) => x.site_id === siteId);
-    cacheTickets(rows);
-    setLastSyncNow();
-    markSynced();
-    return rows;
-  } catch {
-    return useFallback(getCachedTickets(siteId));
+export async function syncCurrentSite(userId: number, siteId: string) {
+  if (!(await isOnline())) {
+    markDirty();
+    return {
+      success: false,
+      error: "offline",
+      tickets: getCachedTickets(siteId),
+      checklists: getCachedChecklists(siteId),
+    };
   }
-}
 
-export async function syncChecklists(userId: number, siteId: string) {
-  try {
-    if (!(await isOnline())) return useFallback(getCachedChecklists(siteId));
+  await flushQueue();
 
-    const open = await getChecklistRuns(userId, "OPEN_ACTIVE");
-    const progress = await getChecklistRuns(userId, "IN_PROGRESS");
+  const openTickets = await getTickets(userId, "OPEN");
+  const progressTickets = await getTickets(userId, "IN_PROGRESS");
+  const waitingTickets = await getTickets(userId, "WAITING");
 
-    const rows = [...open.items, ...progress.items].filter((x) => x.site_id === siteId);
-    cacheChecklists(rows);
-    setLastSyncNow();
-    markSynced();
-    return rows;
-  } catch {
-    return useFallback(getCachedChecklists(siteId));
+  const tickets = [
+    ...openTickets.items,
+    ...progressTickets.items,
+    ...waitingTickets.items,
+  ].filter((x) => x.site_id === siteId);
+
+  cacheTickets(tickets);
+
+  for (const ticket of tickets) {
+    try {
+      const detail = await getTicketDetail(userId, ticket.id);
+      cacheTicketDetail(ticket.id, detail);
+    } catch {
+      // Detailfehler darf Gesamtsync nicht abbrechen.
+    }
   }
-}
 
-export async function syncTicketDetail(userId: number, ticketId: number) {
-  try {
-    if (!(await isOnline())) return useFallback(getCachedTicketDetail(ticketId));
+  const openRuns = await getChecklistRuns(userId, "OPEN_ACTIVE");
+  const progressRuns = await getChecklistRuns(userId, "IN_PROGRESS");
 
-    const detail = await getTicketDetail(userId, ticketId);
-    cacheTicketDetail(ticketId, detail);
-    return detail;
-  } catch {
-    return useFallback(getCachedTicketDetail(ticketId));
+  const checklists = [
+    ...openRuns.items,
+    ...progressRuns.items,
+  ].filter((x) => x.site_id === siteId);
+
+  cacheChecklists(checklists);
+
+  for (const run of checklists) {
+    try {
+      const detail = await getChecklistRunDetail(userId, run.id);
+      cacheChecklistDetail(run.id, detail);
+    } catch {
+      // Detailfehler darf Gesamtsync nicht abbrechen.
+    }
   }
-}
 
-export async function syncChecklistDetail(userId: number, runId: number) {
-  try {
-    if (!(await isOnline())) return useFallback(getCachedChecklistDetail(runId));
+  setLastSyncNow();
+  markSynced();
 
-    const detail = await getChecklistRunDetail(userId, runId);
-    cacheChecklistDetail(runId, detail);
-    return detail;
-  } catch {
-    return useFallback(getCachedChecklistDetail(runId));
-  }
+  return {
+    success: true,
+    tickets,
+    checklists,
+  };
 }

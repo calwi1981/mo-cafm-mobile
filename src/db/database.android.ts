@@ -179,3 +179,48 @@ export function getCachedChecklistDetail(runId: number): any | null {
   );
   return row?.value ? JSON.parse(row.value) : null;
 }
+
+export function ensureQueueTable() {
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS sync_queue (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      type TEXT NOT NULL,
+      payload TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+  `);
+}
+
+export function addQueueItem(type: string, payload: any) {
+  ensureQueueTable();
+  db.runSync(
+    "INSERT INTO sync_queue (type, payload, created_at) VALUES (?, ?, ?);",
+    type,
+    JSON.stringify(payload),
+    new Date().toISOString()
+  );
+}
+
+export function getQueueItems(): any[] {
+  ensureQueueTable();
+  const rows = db.getAllSync<{ id: number; type: string; payload: string; created_at: string }>(
+    "SELECT id, type, payload, created_at FROM sync_queue ORDER BY id ASC;"
+  );
+  return rows.map((r) => ({
+    id: r.id,
+    type: r.type,
+    payload: JSON.parse(r.payload),
+    created_at: r.created_at,
+  }));
+}
+
+export function removeQueueItem(id: number) {
+  ensureQueueTable();
+  db.runSync("DELETE FROM sync_queue WHERE id = ?;", id);
+}
+
+export function getQueueCount(): number {
+  ensureQueueTable();
+  const row = db.getFirstSync<{ total: number }>("SELECT COUNT(*) AS total FROM sync_queue;");
+  return row?.total ?? 0;
+}

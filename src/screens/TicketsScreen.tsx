@@ -5,8 +5,9 @@ import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
 import { notify } from "../notify";
-import { syncTicketDetail, syncTickets } from "../cacheService";
+import { readTicketDetailFromCache, readTicketsFromCache, syncCurrentSite } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
+import { queueAction } from "../syncQueue";
 import { Asset, Building, Room, Site, Ticket, User } from "../types/models";
 
 type TicketFilter = "ALL" | "OPEN" | "IN_PROGRESS" | "WAITING";
@@ -87,7 +88,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   async function loadTickets() {
     try {
       setBusy(true);
-      const rows = (await syncTickets(user.id, site.site_id))
+      const rows = readTicketsFromCache(site.site_id)
         .sort((a: Ticket, b: Ticket) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
@@ -105,7 +106,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   async function openTicket(ticket: Ticket) {
     try {
-      const detail = await syncTicketDetail(user.id, ticket.id);
+      const detail = readTicketDetailFromCache(ticket.id);
       setSelectedTicket(detail);
       setDetailVisible(true);
     } catch (e: any) {
@@ -157,7 +158,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
     }
 
     try {
-      await createTicket({
+      const payload = {
         requester_user_id: user.id,
         site_id: site.site_id,
         title: newTitle.trim(),
@@ -167,7 +168,9 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
         building_id: newBuildingId,
         room_id: newRoomId,
         asset_id: newAssetId,
-      });
+      };
+
+      queueAction("ticket_create", payload);
 
       markDirty();
       setSyncRed(getSyncRed());
@@ -213,12 +216,18 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
     if (!ticket) return;
 
     try {
-      await updateTicket(user.id, ticket.id, {
-        status: editStatus,
-        priority: editPriority,
-        assigned_group: editGroup,
-        comment_text: editComment.trim(),
-      });
+      const payload = {
+        user_id: user.id,
+        ticket_id: ticket.id,
+        data: {
+          status: editStatus,
+          priority: editPriority,
+          assigned_group: editGroup,
+          comment_text: editComment.trim(),
+        },
+      };
+
+      queueAction("ticket_update", payload);
 
       markDirty();
       setSyncRed(getSyncRed());
@@ -246,12 +255,18 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
     if (!ticket) return;
 
     try {
-      await addTicketComment(user.id, ticket.id, newComment.trim());
+      const payload = {
+        user_id: user.id,
+        ticket_id: ticket.id,
+        comment_text: newComment.trim(),
+      };
+
+      queueAction("ticket_comment", payload);
       markDirty();
       setSyncRed(getSyncRed());
       setCommentVisible(false);
       setNewComment("");
-      const detail = await syncTicketDetail(user.id, ticket.id);
+      const detail = readTicketDetailFromCache(ticket.id);
       setSelectedTicket(detail);
       await loadTickets();
       markDirty();
@@ -307,7 +322,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadTickets} language={user.language} syncRed={syncRed} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadTickets(); }} language={user.language} syncRed={syncRed} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>

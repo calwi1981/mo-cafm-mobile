@@ -54,3 +54,15 @@ export function cacheChecklistDetail(_runId: number, _detail: any) {}
 export function getCachedChecklistDetail(_runId: number): any | null {
   return null;
 }
+
+export function addQueueItem(_type: string, _payload: any) {}
+
+export function getQueueItems(): any[] {
+  return [];
+}
+
+export function removeQueueItem(_id: number) {}
+
+export function getQueueCount(): number {
+  return 0;
+}

@@ -2,7 +2,7 @@ import { Footer } from "../components/Footer";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
-import { syncChecklists, syncTickets } from "../cacheService";
+import { readChecklistsFromCache, readTicketsFromCache, syncCurrentSite } from "../cacheService";
 import { TopBar } from "../components/TopBar";
 import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
@@ -30,8 +30,9 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
     }
 
     try {
-      const nextTickets = await syncTickets(user.id, site.site_id);
-      const nextRuns = await syncChecklists(user.id, site.site_id);
+      await syncCurrentSite(user.id, site.site_id);
+      const nextTickets = readTicketsFromCache(site.site_id);
+      const nextRuns = readChecklistsFromCache(site.site_id);
 
       setTickets(nextTickets);
       setRuns(nextRuns);
