@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Alert, FlatList, Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
-import { getTicketDetail, getTickets } from "../api/moCafm";
+import { addTicketComment, createTicket, getTicketDetail, getTickets, updateTicket } from "../api/moCafm";
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
@@ -58,6 +58,20 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   const [busy, setBusy] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
+  const [createVisible, setCreateVisible] = useState(false);
+  const [editVisible, setEditVisible] = useState(false);
+  const [commentVisible, setCommentVisible] = useState(false);
+
+  const [newTitle, setNewTitle] = useState("");
+  const [newDescription, setNewDescription] = useState("");
+  const [newPriority, setNewPriority] = useState("MEDIUM");
+  const [newGroup, setNewGroup] = useState("MAINTENANCE");
+
+  const [editStatus, setEditStatus] = useState("OPEN");
+  const [editPriority, setEditPriority] = useState("MEDIUM");
+  const [editGroup, setEditGroup] = useState("MAINTENANCE");
+  const [editComment, setEditComment] = useState("");
+  const [newComment, setNewComment] = useState("");
 
   async function loadTickets() {
     try {
@@ -91,6 +105,94 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       Alert.alert(t(user.language, "ticketDetail"), e?.message || t(user.language, "unknownError"));
     }
   }
+
+
+  async function submitCreateTicket() {
+    if (!newTitle.trim()) {
+      Alert.alert(t(user.language, "newTicket"), t(user.language, "titleField"));
+      return;
+    }
+
+    try {
+      await createTicket({
+        requester_user_id: user.id,
+        site_id: site.site_id,
+        title: newTitle.trim(),
+        description: newDescription.trim(),
+        priority: newPriority,
+        assigned_group: newGroup,
+      });
+
+      setCreateVisible(false);
+      setNewTitle("");
+      setNewDescription("");
+      setNewPriority("MEDIUM");
+      setNewGroup("MAINTENANCE");
+      await loadTickets();
+      Alert.alert(t(user.language, "newTicket"), t(user.language, "ticketCreated"));
+    } catch (e: any) {
+      Alert.alert(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
+    }
+  }
+
+  function openEditModal() {
+    const ticket = selectedTicket?.ticket;
+    if (!ticket) return;
+
+    setEditStatus(ticket.status || "OPEN");
+    setEditPriority(ticket.priority || "MEDIUM");
+    setEditGroup(ticket.assigned_group || "MAINTENANCE");
+    setEditComment("");
+    setEditVisible(true);
+  }
+
+  async function submitTicketUpdate() {
+    if (!editComment.trim()) {
+      Alert.alert(t(user.language, "updateTicket"), t(user.language, "commentRequired"));
+      return;
+    }
+
+    const ticket = selectedTicket?.ticket;
+    if (!ticket) return;
+
+    try {
+      await updateTicket(user.id, ticket.id, {
+        status: editStatus,
+        priority: editPriority,
+        assigned_group: editGroup,
+        comment_text: editComment.trim(),
+      });
+
+      setEditVisible(false);
+      setDetailVisible(false);
+      await loadTickets();
+      Alert.alert(t(user.language, "updateTicket"), t(user.language, "ticketUpdated"));
+    } catch (e: any) {
+      Alert.alert(t(user.language, "updateTicket"), e?.message || t(user.language, "unknownError"));
+    }
+  }
+
+  async function submitComment() {
+    if (!newComment.trim()) {
+      Alert.alert(t(user.language, "addComment"), t(user.language, "commentRequired"));
+      return;
+    }
+
+    const ticket = selectedTicket?.ticket;
+    if (!ticket) return;
+
+    try {
+      await addTicketComment(user.id, ticket.id, newComment.trim());
+      setCommentVisible(false);
+      setNewComment("");
+      const detail = await getTicketDetail(user.id, ticket.id);
+      setSelectedTicket(detail);
+      await loadTickets();
+    } catch (e: any) {
+      Alert.alert(t(user.language, "addComment"), e?.message || t(user.language, "unknownError"));
+    }
+  }
+
 
   useEffect(() => {
     loadTickets();
@@ -144,7 +246,12 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
           <Text style={styles.backText}>← {t(user.language, "backToDashboard")}</Text>
         </TouchableOpacity>
 
-        <Text style={styles.title}>{t(user.language, "tickets")}</Text>
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>{t(user.language, "tickets")}</Text>
+          <TouchableOpacity style={styles.newButton} onPress={() => setCreateVisible(true)}>
+            <Text style={styles.newButtonText}>+ {t(user.language, "newTicket")}</Text>
+          </TouchableOpacity>
+        </View>
 
         <TextInput
           style={styles.search}
@@ -216,6 +323,15 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
                 <Text style={styles.sectionTitle}>{t(user.language, "description")}</Text>
                 <Text style={styles.description}>{selectedTicket.ticket.description || "-"}</Text>
 
+                <View style={styles.detailActions}>
+                  <TouchableOpacity style={styles.actionButton} onPress={openEditModal}>
+                    <Text style={styles.actionButtonText}>{t(user.language, "updateTicket")}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.actionButton} onPress={() => setCommentVisible(true)}>
+                    <Text style={styles.actionButtonText}>{t(user.language, "addComment")}</Text>
+                  </TouchableOpacity>
+                </View>
+
                 <Text style={styles.sectionTitle}>{t(user.language, "comments")}</Text>
                 {(selectedTicket.comments || []).length === 0 ? <Text style={styles.description}>-</Text> : null}
                 {(selectedTicket.comments || []).map((c: any) => (
@@ -230,6 +346,110 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
           </ScrollView>
         </View>
       </Modal>
+    
+      <Modal visible={createVisible} animationType="slide" onRequestClose={() => setCreateVisible(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHead}>
+            <Text style={styles.modalTitle}>{t(user.language, "newTicket")}</Text>
+            <TouchableOpacity onPress={() => setCreateVisible(false)}>
+              <Text style={styles.close}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalBody}>
+            <Text style={styles.label}>{t(user.language, "titleField")}</Text>
+            <TextInput style={styles.input} value={newTitle} onChangeText={setNewTitle} />
+
+            <Text style={styles.label}>{t(user.language, "descriptionField")}</Text>
+            <TextInput style={[styles.input, styles.textArea]} value={newDescription} onChangeText={setNewDescription} multiline />
+
+            <Text style={styles.label}>{t(user.language, "priority")}</Text>
+            <View style={styles.optionRow}>
+              {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((x) => (
+                <TouchableOpacity key={x} style={[styles.optionButton, newPriority === x && styles.optionActive]} onPress={() => setNewPriority(x)}>
+                  <Text style={[styles.optionText, newPriority === x && styles.optionTextActive]}>{x}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.label}>{t(user.language, "group")}</Text>
+            <View style={styles.optionRow}>
+              {["AM", "MAINTENANCE", "MANAGER", "EXTERN"].map((x) => (
+                <TouchableOpacity key={x} style={[styles.optionButton, newGroup === x && styles.optionActive]} onPress={() => setNewGroup(x)}>
+                  <Text style={[styles.optionText, newGroup === x && styles.optionTextActive]}>{x}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <TouchableOpacity style={styles.primaryButton} onPress={submitCreateTicket}>
+              <Text style={styles.primaryButtonText}>{t(user.language, "saveTicket")}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={editVisible} animationType="slide" onRequestClose={() => setEditVisible(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHead}>
+            <Text style={styles.modalTitle}>{t(user.language, "updateTicket")}</Text>
+            <TouchableOpacity onPress={() => setEditVisible(false)}>
+              <Text style={styles.close}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.modalBody}>
+            <Text style={styles.label}>{t(user.language, "status")}</Text>
+            <View style={styles.optionRow}>
+              {["OPEN", "IN_PROGRESS", "WAITING", "DONE"].map((x) => (
+                <TouchableOpacity key={x} style={[styles.optionButton, editStatus === x && styles.optionActive]} onPress={() => setEditStatus(x)}>
+                  <Text style={[styles.optionText, editStatus === x && styles.optionTextActive]}>{x}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.label}>{t(user.language, "priority")}</Text>
+            <View style={styles.optionRow}>
+              {["LOW", "MEDIUM", "HIGH", "CRITICAL"].map((x) => (
+                <TouchableOpacity key={x} style={[styles.optionButton, editPriority === x && styles.optionActive]} onPress={() => setEditPriority(x)}>
+                  <Text style={[styles.optionText, editPriority === x && styles.optionTextActive]}>{x}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.label}>{t(user.language, "group")}</Text>
+            <View style={styles.optionRow}>
+              {["AM", "MAINTENANCE", "MANAGER", "EXTERN"].map((x) => (
+                <TouchableOpacity key={x} style={[styles.optionButton, editGroup === x && styles.optionActive]} onPress={() => setEditGroup(x)}>
+                  <Text style={[styles.optionText, editGroup === x && styles.optionTextActive]}>{x}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.label}>{t(user.language, "comments")}</Text>
+            <TextInput style={[styles.input, styles.textArea]} value={editComment} onChangeText={setEditComment} multiline />
+
+            <TouchableOpacity style={styles.primaryButton} onPress={submitTicketUpdate}>
+              <Text style={styles.primaryButtonText}>{t(user.language, "saveTicket")}</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        </View>
+      </Modal>
+
+      <Modal visible={commentVisible} animationType="slide" onRequestClose={() => setCommentVisible(false)}>
+        <View style={styles.modal}>
+          <View style={styles.modalHead}>
+            <Text style={styles.modalTitle}>{t(user.language, "addComment")}</Text>
+            <TouchableOpacity onPress={() => setCommentVisible(false)}>
+              <Text style={styles.close}>✕</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalBody}>
+            <TextInput style={[styles.input, styles.textArea]} value={newComment} onChangeText={setNewComment} multiline />
+            <TouchableOpacity style={styles.primaryButton} onPress={submitComment}>
+              <Text style={styles.primaryButtonText}>{t(user.language, "send")}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -239,7 +459,10 @@ const styles = StyleSheet.create({
   content: { flex: 1, padding: 14 },
   backButton: { marginBottom: 8 },
   backText: { color: "#0f172a", fontWeight: "800" },
-  title: { fontSize: 26, fontWeight: "900", color: "#0f172a", marginBottom: 10 },
+  titleRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", gap: 10, marginBottom: 10 },
+  title: { fontSize: 24, fontWeight: "900", color: "#0f172a", flex: 1 },
+  newButton: { backgroundColor: "#0f172a", paddingVertical: 10, paddingHorizontal: 12, borderRadius: 10 },
+  newButtonText: { color: "#fff", fontWeight: "900", fontSize: 12 },
   search: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, padding: 12, fontSize: 16, marginBottom: 10 },
   filters: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
   filterButton: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 999, backgroundColor: "#e2e8f0" },
@@ -273,4 +496,17 @@ const styles = StyleSheet.create({
   commentUser: { fontWeight: "900", color: "#0f172a" },
   commentText: { color: "#334155", marginTop: 4 },
   commentDate: { color: "#94a3b8", marginTop: 4, fontSize: 12 },
+  detailActions: { flexDirection: "row", gap: 10, marginTop: 16 },
+  actionButton: { flex: 1, backgroundColor: "#334155", padding: 12, borderRadius: 10, alignItems: "center" },
+  actionButtonText: { color: "#fff", fontWeight: "900", fontSize: 12 },
+  label: { fontWeight: "900", color: "#0f172a", marginTop: 12, marginBottom: 6 },
+  input: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#cbd5e1", borderRadius: 12, padding: 12, fontSize: 16 },
+  textArea: { minHeight: 120, textAlignVertical: "top" },
+  optionRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 8 },
+  optionButton: { paddingVertical: 8, paddingHorizontal: 10, borderRadius: 999, backgroundColor: "#e2e8f0" },
+  optionActive: { backgroundColor: "#0f172a" },
+  optionText: { color: "#334155", fontWeight: "800", fontSize: 12 },
+  optionTextActive: { color: "#fff" },
+  primaryButton: { backgroundColor: "#16a34a", padding: 15, borderRadius: 12, alignItems: "center", marginTop: 18 },
+  primaryButtonText: { color: "#fff", fontWeight: "900", fontSize: 15 },
 });

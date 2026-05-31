@@ -32,3 +32,37 @@ export async function getChecklistRuns(userId: number, state: "OPEN_ACTIVE" | "I
 export async function getTicketDetail(userId: number, ticketId: number) {
   return apiGet(`/api/tickets/${ticketId}?user_id=${encodeURIComponent(String(userId))}`);
 }
+
+
+export async function createTicket(payload: {
+  requester_user_id: number;
+  site_id: string;
+  building_id?: number | null;
+  room_id?: number | null;
+  asset_id?: number | null;
+  title: string;
+  description?: string;
+  priority?: string;
+  assigned_group?: string;
+}) {
+  return apiPost("/api/tickets", payload);
+}
+
+export async function addTicketComment(userId: number, ticketId: number, comment_text: string) {
+  return apiPost(`/api/tickets/${ticketId}/comment`, {
+    requester_user_id: userId,
+    comment_text,
+  });
+}
+
+export async function updateTicket(userId: number, ticketId: number, payload: {
+  status: string;
+  assigned_group: string;
+  priority: string;
+  comment_text: string;
+}) {
+  return apiPost(`/api/tickets/${ticketId}/update`, {
+    requester_user_id: userId,
+    ...payload,
+  });
+}
