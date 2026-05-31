@@ -1,3 +1,4 @@
+import { Footer } from "../components/Footer";
 import React, { useEffect, useState } from "react";
 import { Alert, FlatList, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { getSites } from "../api/moCafm";
@@ -51,6 +52,7 @@ export function SiteSelectScreen({ user, onSelect, onLogout }: Props) {
           </TouchableOpacity>
         )}
       />
+          <Footer />
     </View>
   );
 }

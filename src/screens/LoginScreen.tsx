@@ -1,3 +1,4 @@
+import { Footer } from "../components/Footer";
 import React, { useState } from "react";
 import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { login } from "../api/moCafm";
@@ -55,6 +56,7 @@ export function LoginScreen({ onLogin, language }: Props) {
       <TouchableOpacity style={styles.button} onPress={submit} disabled={busy}>
         <Text style={styles.buttonText}>{busy ? t(language, "pleaseWait") : t(language, "login")}</Text>
       </TouchableOpacity>
+      <Footer />
     </View>
   );
 }

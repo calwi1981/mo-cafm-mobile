@@ -1,3 +1,4 @@
+import { Footer } from "../components/Footer";
 import React, { useEffect, useState } from "react";
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
@@ -62,6 +63,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite }: Props) {
           <Text style={styles.hint}>OPEN · IN_PROGRESS</Text>
         </TouchableOpacity>
       </View>
+          <Footer />
     </View>
   );
 }
