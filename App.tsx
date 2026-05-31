@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, Platform } from "react-native";
 import { StatusBar } from "expo-status-bar";
 import { AUTO_LOGOUT_HOURS } from "./src/config";
 import { LoginScreen } from "./src/screens/LoginScreen";
@@ -14,7 +14,9 @@ import { initDb } from "./src/db/database";
 type AppScreen = "dashboard" | "tickets" | "checklists";
 
 export default function App() {
-  initDb();
+  if (Platform.OS !== "web") {
+    initDb();
+  }
   const [user, setUser] = useState<User | null>(null);
   const [site, setSite] = useState<Site | null>(null);
   const [screen, setScreen] = useState<AppScreen>("dashboard");

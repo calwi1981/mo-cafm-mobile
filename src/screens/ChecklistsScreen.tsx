@@ -4,6 +4,7 @@ import { createNokTicketsFromChecklist, getChecklistRunDetail, getChecklistRuns,
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { markDirty, markSynced, getSyncRed } from "../syncState";
 import { ChecklistRun, Site, User } from "../types/models";
 
 type Props = {
@@ -62,6 +63,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
   const [filter, setFilter] = useState<RunFilter>("ALL");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  const [syncRed, setSyncRed] = useState(getSyncRed());
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedRun, setSelectedRun] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Record<number, any>>({});
@@ -84,6 +86,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
     } catch (e: any) {
       Alert.alert(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
     } finally {
+      setSyncRed(getSyncRed());
       setBusy(false);
     }
   }
@@ -131,7 +134,10 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
     try {
       await saveChecklistRun(user.id, selectedRun.run.id, payload);
+      markDirty();
+      setSyncRed(getSyncRed());
       setDetailVisible(false);
+      markSynced();
       await loadRuns();
       Alert.alert(t(user.language, "checklists"), t(user.language, "checklistSaved"));
     } catch (e: any) {
@@ -206,7 +212,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadRuns} language={user.language} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadRuns} language={user.language} syncRed={syncRed} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>

@@ -4,6 +4,7 @@ import { addTicketComment, createTicket, getTicketDetail, getTickets, updateTick
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { markDirty, markSynced, getSyncRed } from "../syncState";
 import { Site, Ticket, User } from "../types/models";
 
 type TicketFilter = "ALL" | "OPEN" | "IN_PROGRESS" | "WAITING";
@@ -56,6 +57,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   const [filter, setFilter] = useState<TicketFilter>("ALL");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
+  const [syncRed, setSyncRed] = useState(getSyncRed());
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [createVisible, setCreateVisible] = useState(false);
@@ -92,6 +94,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
     } catch (e: any) {
       Alert.alert(t(user.language, "tickets"), e?.message || t(user.language, "unknownError"));
     } finally {
+      setSyncRed(getSyncRed());
       setBusy(false);
     }
   }
@@ -123,11 +126,14 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
         assigned_group: newGroup,
       });
 
+      markDirty();
+      setSyncRed(getSyncRed());
       setCreateVisible(false);
       setNewTitle("");
       setNewDescription("");
       setNewPriority("MEDIUM");
       setNewGroup("MAINTENANCE");
+      markSynced();
       await loadTickets();
       Alert.alert(t(user.language, "newTicket"), t(user.language, "ticketCreated"));
     } catch (e: any) {
@@ -163,8 +169,13 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
         comment_text: editComment.trim(),
       });
 
+      markDirty();
+      setSyncRed(getSyncRed());
       setEditVisible(false);
+      markDirty();
+      setSyncRed(getSyncRed());
       setDetailVisible(false);
+      markSynced();
       await loadTickets();
       Alert.alert(t(user.language, "updateTicket"), t(user.language, "ticketUpdated"));
     } catch (e: any) {
@@ -183,6 +194,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
     try {
       await addTicketComment(user.id, ticket.id, newComment.trim());
+      markDirty();
+      setSyncRed(getSyncRed());
       setCommentVisible(false);
       setNewComment("");
       const detail = await getTicketDetail(user.id, ticket.id);
@@ -239,7 +252,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadTickets} language={user.language} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={loadTickets} language={user.language} syncRed={syncRed} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
