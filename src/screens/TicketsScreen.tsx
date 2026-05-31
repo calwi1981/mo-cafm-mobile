@@ -5,7 +5,7 @@ import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
 import { notify } from "../notify";
-import { syncTickets } from "../cacheService";
+import { syncTicketDetail, syncTickets } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
 import { Asset, Building, Room, Site, Ticket, User } from "../types/models";
 
@@ -105,7 +105,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   async function openTicket(ticket: Ticket) {
     try {
-      const detail = await getTicketDetail(user.id, ticket.id);
+      const detail = await syncTicketDetail(user.id, ticket.id);
       setSelectedTicket(detail);
       setDetailVisible(true);
     } catch (e: any) {
@@ -251,7 +251,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setSyncRed(getSyncRed());
       setCommentVisible(false);
       setNewComment("");
-      const detail = await getTicketDetail(user.id, ticket.id);
+      const detail = await syncTicketDetail(user.id, ticket.id);
       setSelectedTicket(detail);
       await loadTickets();
       markDirty();

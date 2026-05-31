@@ -42,3 +42,15 @@ export function setCurrentSiteId(_siteId: string) {}
 export function getCurrentSiteId(): string | null {
   return null;
 }
+
+export function cacheTicketDetail(_ticketId: number, _detail: any) {}
+
+export function getCachedTicketDetail(_ticketId: number): any | null {
+  return null;
+}
+
+export function cacheChecklistDetail(_runId: number, _detail: any) {}
+
+export function getCachedChecklistDetail(_runId: number): any | null {
+  return null;
+}

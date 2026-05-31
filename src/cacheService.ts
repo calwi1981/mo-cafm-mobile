@@ -1,14 +1,18 @@
 import NetInfo from "@react-native-community/netinfo";
 import {
+  cacheChecklistDetail,
   cacheChecklists,
   cacheSites,
+  cacheTicketDetail,
   cacheTickets,
+  getCachedChecklistDetail,
   getCachedChecklists,
   getCachedSites,
+  getCachedTicketDetail,
   getCachedTickets,
   setLastSyncNow,
 } from "./db/database";
-import { getChecklistRuns, getSites, getTickets } from "./api/moCafm";
+import { getChecklistRunDetail, getChecklistRuns, getSites, getTicketDetail, getTickets } from "./api/moCafm";
 
 export async function isOnline() {
   const state = await NetInfo.fetch();
@@ -53,4 +57,25 @@ export async function syncChecklists(userId: number, siteId: string) {
   cacheChecklists(rows);
   setLastSyncNow();
   return rows;
+}
+
+
+export async function syncTicketDetail(userId: number, ticketId: number) {
+  if (!(await isOnline())) {
+    return getCachedTicketDetail(ticketId);
+  }
+
+  const detail = await getTicketDetail(userId, ticketId);
+  cacheTicketDetail(ticketId, detail);
+  return detail;
+}
+
+export async function syncChecklistDetail(userId: number, runId: number) {
+  if (!(await isOnline())) {
+    return getCachedChecklistDetail(runId);
+  }
+
+  const detail = await getChecklistRunDetail(userId, runId);
+  cacheChecklistDetail(runId, detail);
+  return detail;
 }

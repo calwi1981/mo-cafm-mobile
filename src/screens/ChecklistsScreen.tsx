@@ -4,7 +4,7 @@ import { createNokTicketsFromChecklist, getChecklistRunDetail, saveChecklistRun 
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
-import { syncChecklists } from "../cacheService";
+import { syncChecklistDetail, syncChecklists } from "../cacheService";
 import { notify } from "../notify";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
 import { ChecklistRun, Site, User } from "../types/models";
@@ -93,7 +93,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
   async function openRun(run: ChecklistRun) {
     try {
-      const detail = await getChecklistRunDetail(user.id, run.id);
+      const detail = await syncChecklistDetail(user.id, run.id);
       const initial: Record<number, any> = {};
       for (const item of detail.items || []) {
         initial[item.id] = {

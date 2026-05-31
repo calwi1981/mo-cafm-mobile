@@ -147,3 +147,35 @@ export function setCurrentSiteId(siteId: string) {
 export function getCurrentSiteId(): string | null {
   return getSyncValue("current_site_id");
 }
+
+export function cacheTicketDetail(ticketId: number, detail: any) {
+  db.runSync(
+    "INSERT OR REPLACE INTO sync_state (key, value) VALUES (?, ?);",
+    `ticket_detail_${ticketId}`,
+    JSON.stringify(detail)
+  );
+}
+
+export function getCachedTicketDetail(ticketId: number): any | null {
+  const row = db.getFirstSync<{ value: string }>(
+    "SELECT value FROM sync_state WHERE key = ?;",
+    `ticket_detail_${ticketId}`
+  );
+  return row?.value ? JSON.parse(row.value) : null;
+}
+
+export function cacheChecklistDetail(runId: number, detail: any) {
+  db.runSync(
+    "INSERT OR REPLACE INTO sync_state (key, value) VALUES (?, ?);",
+    `checklist_detail_${runId}`,
+    JSON.stringify(detail)
+  );
+}
+
+export function getCachedChecklistDetail(runId: number): any | null {
+  const row = db.getFirstSync<{ value: string }>(
+    "SELECT value FROM sync_state WHERE key = ?;",
+    `checklist_detail_${runId}`
+  );
+  return row?.value ? JSON.parse(row.value) : null;
+}
