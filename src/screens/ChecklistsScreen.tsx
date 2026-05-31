@@ -4,6 +4,7 @@ import { createNokTicketsFromChecklist, getChecklistRunDetail, saveChecklistRun 
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { pendingQueueCount } from "../syncQueue";
 import { readChecklistDetailFromCache, readChecklistsFromCache, syncCurrentSite } from "../cacheService";
 import { notify } from "../notify";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
@@ -69,6 +70,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [syncRed, setSyncRed] = useState(getSyncRed());
+  const [pendingCount, setPendingCount] = useState(pendingQueueCount());
   const [detailVisible, setDetailVisible] = useState(false);
   const [selectedRun, setSelectedRun] = useState<any | null>(null);
   const [answers, setAnswers] = useState<Record<number, any>>({});
@@ -88,6 +90,8 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
       notify(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
     } finally {
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setBusy(false);
     }
   }
@@ -141,11 +145,15 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
       });
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setDetailVisible(false);
       markSynced();
       await loadRuns();
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       notify(t(user.language, "checklists"), t(user.language, "checklistSaved"));
     } catch (e: any) {
       notify(t(user.language, "checklists"), e?.message || t(user.language, "unknownError"));
@@ -224,7 +232,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadRuns(); }} language={user.language} syncRed={syncRed} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadRuns(); }} language={user.language} syncRed={syncRed} pendingCount={pendingCount} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>

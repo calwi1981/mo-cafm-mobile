@@ -6,6 +6,7 @@ import { readChecklistsFromCache, readTicketsFromCache, syncCurrentSite } from "
 import { TopBar } from "../components/TopBar";
 import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
+import { pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
 
 type Props = {
@@ -21,10 +22,13 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [runs, setRuns] = useState<ChecklistRun[]>([]);
   const [syncRed, setSyncRed] = useState(false);
+  const [pendingCount, setPendingCount] = useState(pendingQueueCount());
 
   async function syncNow() {
     const state = await NetInfo.fetch();
     if (!state.isConnected || state.isInternetReachable === false) {
+      setSyncRed(true);
+      setPendingCount(pendingQueueCount());
       notify(t(user.language, "sync"), t(user.language, "syncOffline"));
       return;
     }
@@ -37,6 +41,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
       setTickets(nextTickets);
       setRuns(nextRuns);
       setSyncRed(false);
+      setPendingCount(pendingQueueCount());
     } catch (e: any) {
       notify(t(user.language, "sync"), e?.message || t(user.language, "syncError"));
     }
@@ -48,7 +53,7 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} syncRed={syncRed} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={syncNow} language={user.language} />
+      <TopBar title={site.hotel_name} syncRed={syncRed} pendingCount={pendingCount} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={syncNow} language={user.language} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.bigCard} onPress={onOpenTickets}>

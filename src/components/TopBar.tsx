@@ -10,9 +10,10 @@ type Props = {
   onSwitchSite?: () => void;
   onSync?: () => void;
   language?: string;
+  pendingCount?: number;
 };
 
-export function TopBar({ title, syncRed, onLogout, onSwitchSite, onSync, language }: Props) {
+export function TopBar({ title, syncRed, onLogout, onSwitchSite, onSync, language, pendingCount = 0 }: Props) {
   return (
     <View style={styles.wrap}>
       <View style={styles.bar}>
@@ -25,7 +26,7 @@ export function TopBar({ title, syncRed, onLogout, onSwitchSite, onSync, languag
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onSync} style={[styles.syncButton, syncRed ? styles.red : styles.green]}>
-          <Text style={styles.syncText}>{t(language, "sync")}</Text>
+          <Text style={styles.syncText}>{t(language, "sync")}{pendingCount > 0 ? ` (${pendingCount})` : ""}</Text>
         </TouchableOpacity>
       </View>
 

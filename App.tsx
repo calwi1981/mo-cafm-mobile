@@ -12,6 +12,7 @@ import { t } from "./src/i18n";
 import { notify } from "./src/notify";
 import { initDb, setCurrentSiteId } from "./src/db/database";
 import { clearSession, loadSession, saveCurrentSite, saveSession } from "./src/session";
+import { syncCurrentSite } from "./src/cacheService";
 
 type AppScreen = "dashboard" | "tickets" | "checklists";
 
@@ -77,11 +78,12 @@ export default function App() {
       ) : !site ? (
         <SiteSelectScreen
           user={user}
-          onSelect={(nextSite) => {
+          onSelect={async (nextSite) => {
             setCurrentSiteId(nextSite.site_id);
             setSite(nextSite);
-            saveCurrentSite(nextSite);
-            if (user) saveSession(user, nextSite);
+            await saveCurrentSite(nextSite);
+            if (user) await saveSession(user, nextSite);
+            if (user) await syncCurrentSite(user.id, nextSite.site_id);
             setScreen("dashboard");
           }}
           onLogout={logout}

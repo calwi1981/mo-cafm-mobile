@@ -4,6 +4,7 @@ import { addTicketComment, createTicket, getAssets, getBuildings, getRooms, getT
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
+import { pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
 import { readTicketDetailFromCache, readTicketsFromCache, syncCurrentSite } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
@@ -61,6 +62,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [syncRed, setSyncRed] = useState(getSyncRed());
+  const [pendingCount, setPendingCount] = useState(pendingQueueCount());
   const [selectedTicket, setSelectedTicket] = useState<any | null>(null);
   const [detailVisible, setDetailVisible] = useState(false);
   const [createVisible, setCreateVisible] = useState(false);
@@ -100,6 +102,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       notify(t(user.language, "tickets"), e?.message || t(user.language, "unknownError"));
     } finally {
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setBusy(false);
     }
   }
@@ -174,6 +178,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setCreateVisible(false);
       setNewTitle("");
       setNewDescription("");
@@ -189,6 +195,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       notify(t(user.language, "newTicket"), t(user.language, "ticketCreated"));
     } catch (e: any) {
       notify(t(user.language, "newTicket"), e?.message || t(user.language, "unknownError"));
@@ -231,14 +239,20 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setEditVisible(false);
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setDetailVisible(false);
       markSynced();
       await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       notify(t(user.language, "updateTicket"), t(user.language, "ticketUpdated"));
     } catch (e: any) {
       notify(t(user.language, "updateTicket"), e?.message || t(user.language, "unknownError"));
@@ -264,6 +278,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       queueAction("ticket_comment", payload);
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
       setCommentVisible(false);
       setNewComment("");
       const detail = readTicketDetailFromCache(ticket.id);
@@ -271,6 +287,8 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
+      setPendingCount(pendingQueueCount());
+      setPendingCount(pendingQueueCount());
     } catch (e: any) {
       notify(t(user.language, "addComment"), e?.message || t(user.language, "unknownError"));
     }
@@ -322,7 +340,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
 
   return (
     <View style={styles.container}>
-      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadTickets(); }} language={user.language} syncRed={syncRed} />
+      <TopBar title={site.hotel_name} onLogout={onLogout} onSwitchSite={onSwitchSite} onSync={async () => { await syncCurrentSite(user.id, site.site_id); loadTickets(); }} language={user.language} syncRed={syncRed} pendingCount={pendingCount} />
 
       <View style={styles.content}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
