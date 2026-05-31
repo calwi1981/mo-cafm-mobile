@@ -504,6 +504,18 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalBody}>
+            {selectedTicket?.ticket ? (
+              <View style={styles.editSummary}>
+                <Text style={styles.editTicketNo}>{selectedTicket.ticket.ticket_no}</Text>
+                <Text style={styles.editTitle}>{selectedTicket.ticket.title}</Text>
+                <Text style={styles.editMeta}>{selectedTicket.ticket.description || "-"}</Text>
+                <Text style={styles.editMeta}>
+                  {[selectedTicket.ticket.building_name, selectedTicket.ticket.room_code, selectedTicket.ticket.asset_code].filter(Boolean).join(" · ") || "-"}
+                </Text>
+                <Text style={styles.editMeta}>{t(user.language, "dueDate")}: {fmtDate(selectedTicket.ticket.due_date)}</Text>
+              </View>
+            ) : null}
+
             <Text style={styles.label}>{t(user.language, "status")}</Text>
             <View style={styles.optionRow}>
               {["OPEN", "IN_PROGRESS", "WAITING", "DONE"].map((x) => (
@@ -620,4 +632,8 @@ const styles = StyleSheet.create({
   optionTextActive: { color: "#fff" },
   primaryButton: { backgroundColor: "#16a34a", padding: 15, borderRadius: 12, alignItems: "center", marginTop: 18 },
   primaryButtonText: { color: "#fff", fontWeight: "900", fontSize: 15 },
+  editSummary: { backgroundColor: "#fff", borderWidth: 1, borderColor: "#e2e8f0", borderRadius: 14, padding: 14, marginBottom: 14 },
+  editTicketNo: { color: "#64748b", fontWeight: "900", marginBottom: 4 },
+  editTitle: { color: "#0f172a", fontWeight: "900", fontSize: 18, marginBottom: 6 },
+  editMeta: { color: "#334155", marginTop: 3 },
 });
