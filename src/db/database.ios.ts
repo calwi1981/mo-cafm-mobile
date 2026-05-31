@@ -138,3 +138,12 @@ export function getCachedChecklists(siteId: string): any[] {
   );
   return rows.map((r) => JSON.parse(r.json));
 }
+
+
+export function setCurrentSiteId(siteId: string) {
+  setSyncValue("current_site_id", siteId);
+}
+
+export function getCurrentSiteId(): string | null {
+  return getSyncValue("current_site_id");
+}

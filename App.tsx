@@ -10,7 +10,7 @@ import { ChecklistsScreen } from "./src/screens/ChecklistsScreen";
 import { Site, User } from "./src/types/models";
 import { t } from "./src/i18n";
 import { notify } from "./src/notify";
-import { initDb } from "./src/db/database";
+import { initDb, setCurrentSiteId } from "./src/db/database";
 
 type AppScreen = "dashboard" | "tickets" | "checklists";
 
@@ -63,6 +63,7 @@ export default function App() {
         <SiteSelectScreen
           user={user}
           onSelect={(nextSite) => {
+            setCurrentSiteId(nextSite.site_id);
             setSite(nextSite);
             setScreen("dashboard");
           }}

@@ -35,3 +35,10 @@ export function cacheChecklists(_runs: any[]) {}
 export function getCachedChecklists(_siteId: string): any[] {
   return [];
 }
+
+
+export function setCurrentSiteId(_siteId: string) {}
+
+export function getCurrentSiteId(): string | null {
+  return null;
+}
