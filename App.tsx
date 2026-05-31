@@ -11,6 +11,7 @@ import { Site, User } from "./src/types/models";
 import { t } from "./src/i18n";
 import { notify } from "./src/notify";
 import { initDb, setCurrentSiteId } from "./src/db/database";
+import { clearSession, loadSession, saveCurrentSite, saveSession } from "./src/session";
 
 type AppScreen = "dashboard" | "tickets" | "checklists";
 
@@ -23,22 +24,36 @@ export default function App() {
   const [screen, setScreen] = useState<AppScreen>("dashboard");
   const loginAtRef = useRef<number | null>(null);
 
-  function logout() {
+  async function logout() {
+    await clearSession();
     setUser(null);
     setSite(null);
     setScreen("dashboard");
     loginAtRef.current = null;
   }
 
-  function handleLogin(nextUser: User) {
+  async function handleLogin(nextUser: User) {
     loginAtRef.current = Date.now();
     setUser(nextUser);
+    await saveSession(nextUser, site);
   }
 
   function switchSite() {
     setSite(null);
     setScreen("dashboard");
   }
+
+  useEffect(() => {
+    loadSession().then((stored) => {
+      if (stored.user) {
+        setUser(stored.user);
+        loginAtRef.current = Date.now();
+      }
+      if (stored.site) {
+        setSite(stored.site);
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -65,6 +80,8 @@ export default function App() {
           onSelect={(nextSite) => {
             setCurrentSiteId(nextSite.site_id);
             setSite(nextSite);
+            saveCurrentSite(nextSite);
+            if (user) saveSession(user, nextSite);
             setScreen("dashboard");
           }}
           onLogout={logout}
