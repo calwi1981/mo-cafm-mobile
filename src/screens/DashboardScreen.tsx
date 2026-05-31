@@ -8,6 +8,7 @@ import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
 import { pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
+import { getSyncRed } from "../syncState";
 
 type Props = {
   onOpenTickets: () => void;
@@ -47,8 +48,15 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
     }
   }
 
+  function loadLocalDashboard() {
+    setTickets(readTicketsFromCache(site.site_id));
+    setRuns(readChecklistsFromCache(site.site_id));
+    setPendingCount(pendingQueueCount());
+    setSyncRed(getSyncRed() || pendingQueueCount() > 0);
+  }
+
   useEffect(() => {
-    syncNow();
+    loadLocalDashboard();
   }, [site.site_id]);
 
   return (

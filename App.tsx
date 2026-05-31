@@ -80,10 +80,10 @@ export default function App() {
           user={user}
           onSelect={async (nextSite) => {
             setCurrentSiteId(nextSite.site_id);
-            setSite(nextSite);
             await saveCurrentSite(nextSite);
             if (user) await saveSession(user, nextSite);
             if (user) await syncCurrentSite(user.id, nextSite.site_id);
+            setSite(nextSite);
             setScreen("dashboard");
           }}
           onLogout={logout}
