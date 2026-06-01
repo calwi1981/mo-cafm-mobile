@@ -228,3 +228,11 @@ export function getQueueCount(): number {
   const row = db.getFirstSync<{ total: number }>("SELECT COUNT(*) AS total FROM sync_queue;");
   return row?.total ?? 0;
 }
+
+export function clearCachedTicketsForSite(siteId: string) {
+  db.runSync("DELETE FROM cached_tickets WHERE site_id = ?;", siteId);
+}
+
+export function clearCachedChecklistsForSite(siteId: string) {
+  db.runSync("DELETE FROM cached_checklists WHERE site_id = ?;", siteId);
+}

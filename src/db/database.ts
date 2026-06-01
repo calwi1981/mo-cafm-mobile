@@ -105,3 +105,19 @@ export function removeQueueItem(id: number) {
 export function getQueueCount(): number {
   return queue.length;
 }
+
+export function clearCachedTicketsForSite(siteId: string) {
+  for (const id of Object.keys(tickets)) {
+    if (tickets[Number(id)]?.site_id === siteId) {
+      delete tickets[Number(id)];
+    }
+  }
+}
+
+export function clearCachedChecklistsForSite(siteId: string) {
+  for (const id of Object.keys(checklists)) {
+    if (checklists[Number(id)]?.site_id === siteId) {
+      delete checklists[Number(id)];
+    }
+  }
+}

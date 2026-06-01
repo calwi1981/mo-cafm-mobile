@@ -5,6 +5,8 @@ import {
   cacheSites,
   cacheTicketDetail,
   cacheTickets,
+  clearCachedTicketsForSite,
+  clearCachedChecklistsForSite,
   getCachedChecklistDetail,
   getCachedChecklists,
   getCachedSites,
@@ -77,6 +79,7 @@ export async function syncCurrentSite(userId: number, siteId: string) {
     ...waitingTickets.items,
   ].filter((x) => x.site_id === siteId);
 
+  clearCachedTicketsForSite(siteId);
   cacheTickets(tickets);
 
   for (const ticket of tickets) {
@@ -96,6 +99,7 @@ export async function syncCurrentSite(userId: number, siteId: string) {
     ...progressRuns.items,
   ].filter((x) => x.site_id === siteId);
 
+  clearCachedChecklistsForSite(siteId);
   cacheChecklists(checklists);
 
   for (const run of checklists) {
