@@ -243,6 +243,7 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setSyncRed(getSyncRed());
       setPendingCount(pendingQueueCount());
       setPendingCount(pendingQueueCount());
+      setTickets((prev) => prev.filter((x) => x.id !== ticket.id));
       setEditVisible(false);
       markDirty();
       setSyncRed(getSyncRed());

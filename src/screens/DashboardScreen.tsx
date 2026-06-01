@@ -6,7 +6,7 @@ import { readChecklistsFromCache, readTicketsFromCache, syncCurrentSite } from "
 import { TopBar } from "../components/TopBar";
 import { ChecklistRun, Site, Ticket, User } from "../types/models";
 import { t } from "../i18n";
-import { pendingQueueCount } from "../syncQueue";
+import { pendingChangedChecklistIds, pendingChangedTicketIds, pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
 import { getSyncRed } from "../syncState";
 
@@ -49,8 +49,11 @@ export function DashboardScreen({ user, site, onLogout, onSwitchSite, onOpenTick
   }
 
   function loadLocalDashboard() {
-    setTickets(readTicketsFromCache(site.site_id));
-    setRuns(readChecklistsFromCache(site.site_id));
+    const pendingTicketIds = new Set(pendingChangedTicketIds());
+    const pendingChecklistIds = new Set(pendingChangedChecklistIds());
+
+    setTickets(readTicketsFromCache(site.site_id).filter((x) => !pendingTicketIds.has(x.id)));
+    setRuns(readChecklistsFromCache(site.site_id).filter((x) => !pendingChecklistIds.has(x.id)));
     setPendingCount(pendingQueueCount());
     setSyncRed(getSyncRed() || pendingQueueCount() > 0);
   }
