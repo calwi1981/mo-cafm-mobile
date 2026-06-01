@@ -171,14 +171,13 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
     await submitChecklist();
 
     try {
-      const res = { created: 0, skipped: 0 };
       queueAction("checklist_create_nok_tickets", {
         user_id: user.id,
         run_id: selectedRun.run.id,
       });
       notify(
         t(user.language, "saveAndCreateNokTickets"),
-        `${t(user.language, "nokTicketsCreated")} (${res.created || 0} / ${res.skipped || 0})`
+        "NOK-Ticket-Erstellung wurde gespeichert und wird beim nächsten Sync ausgeführt."
       );
     } catch (e: any) {
       notify(t(user.language, "saveAndCreateNokTickets"), e?.message || t(user.language, "unknownError"));

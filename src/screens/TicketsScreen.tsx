@@ -8,6 +8,7 @@ import { pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
 import { readTicketDetailFromCache, readTicketsFromCache, syncCurrentSite } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
+import { cacheTicketDetail, cacheTickets } from "../db/database";
 import { queueAction } from "../syncQueue";
 import { Asset, Building, Room, Site, Ticket, User } from "../types/models";
 
