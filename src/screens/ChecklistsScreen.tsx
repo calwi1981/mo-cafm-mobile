@@ -79,6 +79,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
     try {
       setBusy(true);
       const rows = readChecklistsFromCache(site.site_id)
+        .filter((x: ChecklistRun) => ["OPEN", "IN_PROGRESS"].includes(x.status))
         .sort((a: ChecklistRun, b: ChecklistRun) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
@@ -149,6 +150,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
       setPendingCount(pendingQueueCount());
       setDetailVisible(false);
       markSynced();
+      setRuns(readChecklistsFromCache(site.site_id).filter((x: ChecklistRun) => ["OPEN", "IN_PROGRESS"].includes(x.status)));
       await loadRuns();
       markDirty();
       setSyncRed(getSyncRed());
@@ -194,7 +196,8 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
     return runs.filter((run) => {
       if (filter !== "ALL" && run.status !== filter) return false;
-      if (cycleFilter !== "ALL" && run.plan_frequency !== cycleFilter) return false;
+      const freq = run.plan_frequency || (run as any).frequency || (run as any).planFrequency;
+      if (cycleFilter !== "ALL" && freq !== cycleFilter) return false;
       if (!q) return true;
 
       const text = [
