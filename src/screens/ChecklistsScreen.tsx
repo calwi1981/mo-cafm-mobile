@@ -4,7 +4,7 @@ import { createNokTicketsFromChecklist, getChecklistRunDetail, saveChecklistRun 
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
-import { pendingQueueCount } from "../syncQueue";
+import { pendingChangedChecklistIds, pendingQueueCount } from "../syncQueue";
 import { readChecklistDetailFromCache, readChecklistsFromCache, syncCurrentSite } from "../cacheService";
 import { notify } from "../notify";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
@@ -76,8 +76,10 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
   async function loadRuns() {
     try {
       setBusy(true);
+      const pendingIds = new Set(pendingChangedChecklistIds());
       const rows = readChecklistsFromCache(site.site_id)
         .filter((x: ChecklistRun) => ["OPEN", "IN_PROGRESS"].includes(x.status))
+        .filter((x: ChecklistRun) => !pendingIds.has(x.id))
         .sort((a: ChecklistRun, b: ChecklistRun) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;

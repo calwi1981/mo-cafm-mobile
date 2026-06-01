@@ -57,3 +57,17 @@ export async function flushQueue() {
 
   return { success: true, processed, pending: pendingQueueCount() };
 }
+
+export function pendingChangedTicketIds(): number[] {
+  return getQueueItems()
+    .filter((x) => x.type === "ticket_update" || x.type === "ticket_comment")
+    .map((x) => x.payload.ticket_id)
+    .filter((x) => typeof x === "number");
+}
+
+export function pendingChangedChecklistIds(): number[] {
+  return getQueueItems()
+    .filter((x) => x.type === "checklist_save" || x.type === "checklist_create_nok_tickets")
+    .map((x) => x.payload.run_id)
+    .filter((x) => typeof x === "number");
+}

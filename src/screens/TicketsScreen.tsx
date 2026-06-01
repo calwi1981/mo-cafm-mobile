@@ -4,7 +4,7 @@ import { addTicketComment, createTicket, getAssets, getBuildings, getRooms, getT
 import { Footer } from "../components/Footer";
 import { TopBar } from "../components/TopBar";
 import { t } from "../i18n";
-import { pendingQueueCount } from "../syncQueue";
+import { pendingChangedTicketIds, pendingQueueCount } from "../syncQueue";
 import { notify } from "../notify";
 import { readTicketDetailFromCache, readTicketsFromCache, syncCurrentSite } from "../cacheService";
 import { markDirty, markSynced, getSyncRed } from "../syncState";
@@ -91,7 +91,9 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
   async function loadTickets() {
     try {
       setBusy(true);
+      const pendingIds = new Set(pendingChangedTicketIds());
       const rows = readTicketsFromCache(site.site_id)
+        .filter((x: Ticket) => !pendingIds.has(x.id))
         .sort((a: Ticket, b: Ticket) => {
           const r = dueRank(a) - dueRank(b);
           if (r !== 0) return r;
