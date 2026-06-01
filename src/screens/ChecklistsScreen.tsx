@@ -20,7 +20,6 @@ type Props = {
 };
 
 type RunFilter = "ALL" | "OPEN" | "IN_PROGRESS";
-type CycleFilter = "ALL" | "DAILY" | "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 function fmtDate(value?: string) {
   if (!value) return "-";
@@ -66,7 +65,6 @@ function questionText(item: any, language?: string) {
 export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }: Props) {
   const [runs, setRuns] = useState<ChecklistRun[]>([]);
   const [filter, setFilter] = useState<RunFilter>("ALL");
-  const [cycleFilter, setCycleFilter] = useState<CycleFilter>("ALL");
   const [search, setSearch] = useState("");
   const [busy, setBusy] = useState(false);
   const [syncRed, setSyncRed] = useState(getSyncRed());
@@ -196,8 +194,6 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
     return runs.filter((run) => {
       if (filter !== "ALL" && run.status !== filter) return false;
-      const freq = run.plan_frequency || (run as any).frequency || (run as any).planFrequency;
-      if (cycleFilter !== "ALL" && freq !== cycleFilter) return false;
       if (!q) return true;
 
       const text = [
@@ -215,7 +211,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
 
       return text.includes(q);
     });
-  }, [runs, filter, cycleFilter, search]);
+  }, [runs, filter, search]);
 
   const grouped = useMemo(() => {
     const result: Array<{ type: "header"; title: string } | { type: "run"; run: ChecklistRun }> = [];
@@ -259,13 +255,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
           ))}
         </View>
 
-        <View style={styles.filters}>
-          {(["ALL", "DAILY", "WEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"] as CycleFilter[]).map((x) => (
-            <TouchableOpacity key={x} style={[styles.filterButton, cycleFilter === x && styles.filterActive]} onPress={() => setCycleFilter(x)}>
-              <Text style={[styles.filterText, cycleFilter === x && styles.filterTextActive]}>{x === "ALL" ? t(user.language, "all") : x}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+
 
         {busy ? <Text style={styles.loading}>{t(user.language, "loadingChecklists")}</Text> : null}
 
