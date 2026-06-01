@@ -91,14 +91,18 @@ export function cacheTickets(tickets: any[]) {
   const now = new Date().toISOString();
   db.withTransactionSync(() => {
     for (const ticket of tickets) {
-      db.runSync(
-        "INSERT OR REPLACE INTO cached_tickets (id, site_id, status, json, updated_at) VALUES (?, ?, ?, ?, ?);",
-        ticket.id,
-        ticket.site_id,
-        ticket.status,
-        JSON.stringify(ticket),
-        now
-      );
+      if (ticket.status === "DONE") {
+        db.runSync("DELETE FROM cached_tickets WHERE id = ?;", ticket.id);
+      } else {
+        db.runSync(
+          "INSERT OR REPLACE INTO cached_tickets (id, site_id, status, json, updated_at) VALUES (?, ?, ?, ?, ?);",
+          ticket.id,
+          ticket.site_id,
+          ticket.status,
+          JSON.stringify(ticket),
+          now
+        );
+      }
     }
 
     db.runSync("DELETE FROM cached_tickets WHERE status = 'DONE';");

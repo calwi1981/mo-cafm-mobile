@@ -44,7 +44,11 @@ export function getCachedSites(): any[] {
 
 export function cacheTickets(rows: any[]) {
   for (const ticket of rows) {
-    if (ticket.status !== "DONE") tickets[ticket.id] = ticket;
+    if (ticket.status === "DONE") {
+      delete tickets[ticket.id];
+    } else {
+      tickets[ticket.id] = ticket;
+    }
   }
 }
 
