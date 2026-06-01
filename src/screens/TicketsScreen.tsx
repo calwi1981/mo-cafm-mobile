@@ -193,7 +193,6 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setRooms([]);
       setAssets([]);
       markSynced();
-      await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
       setPendingCount(pendingQueueCount());
@@ -249,7 +248,6 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setPendingCount(pendingQueueCount());
       setDetailVisible(false);
       markSynced();
-      await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
       setPendingCount(pendingQueueCount());
@@ -285,7 +283,6 @@ export function TicketsScreen({ user, site, onBack, onLogout, onSwitchSite }: Pr
       setNewComment("");
       const detail = readTicketDetailFromCache(ticket.id);
       setSelectedTicket(detail);
-      await loadTickets();
       markDirty();
       setSyncRed(getSyncRed());
       setPendingCount(pendingQueueCount());

@@ -202,9 +202,7 @@ export function ChecklistsScreen({ user, site, onBack, onLogout, onSwitchSite }:
         run.status,
         run.assigned_group,
         run.building_name,
-        run.asset_code,
         run.asset_description,
-        run.room_code,
         run.room_description,
       ].filter(Boolean).join(" ").toLowerCase();
 
